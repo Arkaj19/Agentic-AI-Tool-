@@ -1,0 +1,20 @@
+# secrets
+backend/.env
+.env
+
+# environments and build output
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
+__pycache__/
+*.pyc
+
+# runtime data (runs, cache, checkpoints)
+backend/data/
+
+# client data: keep out of the repository
+local_sharepoint/**
+!local_sharepoint/README.md
+
+# client mapping template (needed to run; not published)
+templates/*.xlsx
