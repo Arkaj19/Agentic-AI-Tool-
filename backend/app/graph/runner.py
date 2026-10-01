@@ -9,12 +9,16 @@ from concurrent.futures import ThreadPoolExecutor
 
 from langgraph.types import Command
 
-from app.graph import pipeline
+from app.graph import pipeline, pipeline_dbx
 from app.rulebook import service as mappings
 from app.store import runs
 
 _checkpointer = pipeline.make_checkpointer()
-graph = pipeline.build(_checkpointer)
+_graphs = {"embedded": pipeline.build(_checkpointer), "databricks": pipeline_dbx.build(_checkpointer)}
+
+
+def _graph(rid: str):
+    return _graphs[runs.get(rid).get("engine", "embedded")]
 _pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="run")
 _active: set[str] = set()
 _alock = threading.Lock()
@@ -31,6 +35,7 @@ def _invoke(rid: str, payload) -> None:
         runs.update(rid, lambda r: r.update(status="running", started=r.get("started") or runs.now()))
         runs.emit(rid, "run", "Run resumed" if isinstance(payload, Command) else "Run started",
                   data={"status": "running"})
+        graph = _graph(rid)
         graph.invoke(payload, _config(rid))
         snap = graph.get_state(_config(rid))
         run = runs.get(rid)
@@ -56,6 +61,15 @@ def start(file: str, mapping_id: str, *, by: str = "user") -> dict:
     meta = mappings.get(mapping_id)
     run = runs.create(file=file, mapping_id=mapping_id, mapping_doc=meta["sourceDoc"]["name"], started_by=by)
     runs.emit(run["id"], "run", f"Run created for {file}", data={"status": "queued"})
+    _pool.submit(_invoke, run["id"], {"run_id": run["id"]})
+    return run
+
+
+def start_databricks(file: str, *, by: str = "user") -> dict:
+    run = runs.create(file=file, mapping_id=None, mapping_doc="Databricks rule book", started_by=by,
+                      engine="databricks")
+    runs.update(run["id"], lambda r: r.update(approvedBy=by, approvedAt=runs.now()))
+    runs.emit(run["id"], "run", f"Databricks run created for {file}", data={"status": "queued"})
     _pool.submit(_invoke, run["id"], {"run_id": run["id"]})
     return run
 

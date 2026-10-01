@@ -18,3 +18,6 @@ local_sharepoint/**
 
 # client mapping template (needed to run; not published)
 templates/*.xlsx
+
+# Databricks rule book and row rules (client material, not published)
+rules/databricks/

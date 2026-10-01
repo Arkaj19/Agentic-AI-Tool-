@@ -4,6 +4,7 @@ import { CheckCircle2, Download, FileText, FolderOpen, Play, Sparkles } from 'lu
 import { PageHeader } from '../components/Layout'
 import DataTable from '../components/DataTable'
 import FilePicker from '../components/FilePicker'
+import DatabricksRulebook from '../components/DatabricksRulebook'
 import { Card, Empty, ErrorBox, Loading, Segmented, Spinner } from '../components/ui'
 import { api } from '../lib/api'
 import { useAsync } from '../lib/hooks'
@@ -94,6 +95,7 @@ export default function Rulebook() {
   const { mappingDoc, setMappingDoc, mappingId, setMappingId, status, toast } = useApp()
   const [picker, setPicker] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [pipeline, setPipeline] = useState('embedded')
   const mapQ = useAsync(() => api.mapping(mappingId), [mappingId], { enabled: !!mappingId })
   const meta = mapQ.data?.meta
 
@@ -111,9 +113,14 @@ export default function Rulebook() {
       <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
         <DocumentPanel doc={mappingDoc} generating={generating} onFetch={() => setPicker(true)} onGenerate={generate} />
 
-        <Card title="Rulebook"
-          actions={meta && <a className="btn-outline btn-sm" href={api.mappingDownloadUrl(meta.id)}><Download className="h-3.5 w-3.5" />Download</a>}>
-          {generating ? <Loading label="Creating the rulebook…" hint="The AI agent is reading the document." />
+        <Card title={pipeline === 'databricks' ? 'Databricks rule book' : 'Rulebook'}
+          actions={meta && <>
+            <span className="text-xs font-medium text-slate-500">Run on</span>
+            <Segmented value={pipeline} onChange={setPipeline} options={[
+              { value: 'embedded', label: 'Embedded engine' }, { value: 'databricks', label: 'Databricks' }]} />
+            {pipeline === 'embedded' && <a className="btn-outline btn-sm" href={api.mappingDownloadUrl(meta.id)}><Download className="h-3.5 w-3.5" />Download</a>}
+          </>}>
+          {meta && pipeline === 'databricks' ? <DatabricksRulebook /> : generating ? <Loading label="Creating the rulebook…" hint="The AI agent is reading the document." />
             : !mappingId ? (
               <Empty icon={Sparkles} title="Rulebook appears here">Fetch a mapping document and click Generate rulebook.</Empty>
             ) : mapQ.loading && !mapQ.data ? <Loading /> : mapQ.error ? <ErrorBox error={mapQ.error} onRetry={mapQ.reload} /> : meta && (

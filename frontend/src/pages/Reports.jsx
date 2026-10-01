@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Download, FileBarChart2, FileSpreadsheet, Table2 } from 'lucide-react'
+import { Code2, Download, FileBarChart2, FileSpreadsheet, Table2 } from 'lucide-react'
 import { PageHeader } from '../components/Layout'
 import ValidationCard from '../components/ValidationCard'
-import { Card, Empty, ErrorBox, Kpi, Loading } from '../components/ui'
+import DataTable from '../components/DataTable'
+import { Card, Empty, ErrorBox, Kpi, Loading, Pager } from '../components/ui'
 import { api } from '../lib/api'
 import { useAsync } from '../lib/hooks'
 import { bytes, dateTime, num } from '../lib/format'
@@ -12,6 +13,25 @@ const KIND = {
   s4: { tone: 'bg-emerald-50 text-emerald-700', icon: FileSpreadsheet },
   report: { tone: 'bg-navy-50 text-navy-800', icon: FileBarChart2 },
   mapping: { tone: 'bg-amber-50 text-amber-800', icon: Table2 },
+  code: { tone: 'bg-slate-100 text-slate-700', icon: Code2 },
+}
+
+function GoldPreview({ run }) {
+  const [offset, setOffset] = useState(0)
+  const q = useAsync(() => api.gold(run.id, { offset, limit: 50 }), [run.id, offset, run.status])
+  if (q.error) return <Card title="Gold layer data"><ErrorBox error={q.error} onRetry={q.reload} /></Card>
+  if (!q.data) return <Card title="Gold layer data"><Loading /></Card>
+  const d = q.data
+  const cols = d.columns.slice(0, 14).map((c, i) => ({
+    key: c, label: c, sortable: false, render: (r) => r[i],
+    className: c === 'WERKS' ? 'mono font-semibold text-navy-800' : c === 'PRODUCT' ? 'font-medium' : '',
+  }))
+  return (
+    <Card title="Gold layer data" subtitle={`${run.dbx?.goldTable} · fetched from Databricks · first ${num(d.previewRows)} of ${num(d.total)} rows · ${d.columns.length} columns`}>
+      <DataTable columns={cols} rows={d.rows} maxHeight="50vh" />
+      <div className="mt-2"><Pager offset={offset} limit={50} total={Math.min(d.total, d.previewRows)} onChange={setOffset} /></div>
+    </Card>
+  )
 }
 
 export default function Reports() {
@@ -42,12 +62,23 @@ export default function Reports() {
         <Card><Empty icon={FileBarChart2} title="No reports yet">Reports appear here when processing finishes.</Empty></Card>
       )) : runQ.loading && !run ? <Card><Loading /></Card> : runQ.error ? <ErrorBox error={runQ.error} onRetry={runQ.reload} /> : run && (
         <div className="space-y-5">
+          {run.engine === 'databricks' ? (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Kpi label="Silver rows" value={num(run.dbx?.silverRows)} sub={run.dbx?.silverTable} />
+              <Kpi label="Gold rows" value={num(run.dbx?.goldRows)} tone="good" sub={run.dbx?.goldTable} />
+              <Kpi label="Rule book checks passed" value={v ? `${v.metrics.rulesPassed}/${v.metrics.rulesTotal}` : '–'}
+                tone={v?.passed ? 'good' : v ? 'bad' : 'default'} />
+              <Kpi label="Rows failing row checks" value={v ? num(v.metrics.rowFail) : '–'} tone={v?.metrics.rowFail ? 'bad' : 'good'}
+                sub={v ? `${num(v.metrics.rowPass)} rows passed` : ''} />
+            </div>
+          ) : (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Kpi label="ECC rows" value={num(run.metrics?.eccRows)} />
             <Kpi label="S/4 rows" value={num(run.metrics?.loadRows)} tone="good" />
             <Kpi label={`Plant ${v?.plant || ''} match with Databricks`} value={v ? `${v.metrics.foundPct}%` : '–'} />
             <Kpi label="Validation" value={v ? (v.passed ? 'Passed' : 'Failed') : '–'} tone={v?.passed ? 'good' : v ? 'bad' : 'default'} />
           </div>
+          )}
           <div className="grid gap-5 xl:grid-cols-2">
             <Card title="Files" bodyClass="p-0">
               {run.outputs.length === 0 ? <Empty icon={FileSpreadsheet} title="Files are being prepared" /> : (
@@ -71,6 +102,7 @@ export default function Reports() {
             </Card>
             <ValidationCard validation={v} />
           </div>
+          {run.engine === 'databricks' && run.dbx?.goldRows !== undefined && <GoldPreview run={run} />}
         </div>
       )}
     </>

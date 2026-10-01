@@ -14,3 +14,4 @@ langgraph>=1.0
 langgraph-checkpoint-sqlite>=2.0
 xlsxwriter>=3.2
 pypdf>=4.0
+databricks-sdk>=0.30

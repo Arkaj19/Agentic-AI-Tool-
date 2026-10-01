@@ -73,12 +73,34 @@ class Settings:
     # Share of matched rows whose key field values must agree.
     FIELD_PASS_MARK = float(_str("FIELD_PASS_MARK", "0.99"))
 
+    # -- Databricks pipeline -------------------------------------------------------
+    DATABRICKS_HOST = _str("DATABRICKS_HOST")
+    DATABRICKS_TOKEN = _str("DATABRICKS_TOKEN")
+    DATABRICKS_WAREHOUSE_ID = _str("DATABRICKS_WAREHOUSE_ID")
+    DATABRICKS_NOTEBOOK_ROOT = _str("DATABRICKS_NOTEBOOK_ROOT")
+    # Unity Catalog Volume the ECC file is uploaded to before the silver table is built.
+    DATABRICKS_VOLUME_PATH = _str("DATABRICKS_VOLUME_PATH", "/Volumes/dbr_agent/silver/sap")
+    DBX_SILVER_TABLE = _str("DBX_SILVER_TABLE", "dbr_agent.silver.marc_dap")
+    DBX_GOLD_TABLE = _str("DBX_GOLD_TABLE", "dbr_agent.gold.marc_dap")
+    # Rule book used for code generation (local copy) and the text shown from SharePoint.
+    DBX_RULEBOOK_LOCAL = _path("DBX_RULEBOOK_LOCAL", PROJECT_DIR / "rules" / "databricks" / "MARC_Rule_Book_dbr_agent.csv")
+    DBX_ROW_RULES = _path("DBX_ROW_RULES", PROJECT_DIR / "rules" / "databricks" / "row_rules_MARC.json")
+    SP_DBX_RULEBOOK_PATH = _str("SP_DBX_RULEBOOK_PATH", "Mappings/Databricks/MARC_Rule_Book_dbr_agent.txt")
+    DBX_MAX_FIX_ATTEMPTS = int(_str("DBX_MAX_FIX_ATTEMPTS", "3"))   # static-check fix loop
+    DBX_MAX_RUN_ATTEMPTS = int(_str("DBX_MAX_RUN_ATTEMPTS", "2"))   # runtime-error fix loop
+    DBX_PREVIEW_ROWS = int(_str("DBX_PREVIEW_ROWS", "500"))         # gold rows kept for the UI
+
     FRONTEND_ORIGIN = _str("FRONTEND_ORIGIN", "http://localhost:5180")
 
     @property
     def sharepoint_configured(self) -> bool:
         return all([self.TENANT_ID, self.CLIENT_ID, self.CLIENT_SECRET,
                     self.SHAREPOINT_HOSTNAME, self.SITE_PATH])
+
+    @property
+    def databricks_configured(self) -> bool:
+        return all([self.DATABRICKS_HOST, self.DATABRICKS_TOKEN, self.DATABRICKS_WAREHOUSE_ID,
+                    self.DATABRICKS_NOTEBOOK_ROOT])
 
     @property
     def llm_configured(self) -> bool:
