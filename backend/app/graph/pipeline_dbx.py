@@ -81,6 +81,12 @@ def silver(state: State, rid: str):
         raise ValueError("The ECC file has no material / plant columns")
     cols = client.table_columns(settings.DBX_SILVER_TABLE) or list(sap.columns)
     out = pd.DataFrame({c: (sap[c] if c in sap else "") for c in cols})
+    # Excel dates arrive as '2024-05-15 00:00:00'; the rule book reads ECC dates as dd-MM-yyyy.
+    for c in out.columns:
+        v = out[c].astype(str)
+        iso = v.str.match(r"^\d{4}-\d{2}-\d{2}( 00:00:00)?$")
+        if iso.any():
+            out.loc[iso, c] = pd.to_datetime(v[iso].str[:10], format="%Y-%m-%d").dt.strftime("%d-%m-%Y")
     missing = [c for c in cols if c not in sap]
     if missing:
         _log(rid, "silver", f"{len(missing)} silver columns not in the file, loaded blank: {', '.join(missing[:12])}", "warn")
