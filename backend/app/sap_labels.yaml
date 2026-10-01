@@ -61,6 +61,67 @@ MARC:
   KZKFK: Correction factors
   FPRFM: Distr. profile
   MULTIPLE_EKGRP: Purchasing Across Purchasing Group
+  # added for the Databricks silver table (standard SAP labels)
+  ABCIN: "CC phys. inv. ind."
+  AUFTL: Splitting indicator
+  AUSSS: "Assembly scrap (%)"
+  AUTRU: Reset automatically
+  BASMG: Base quantity
+  BEARZ: Processing time
+  BWSCL: Source of supply
+  CCFIX: CC indicator fixed
+  CONS_PROCG: Consignment Control
+  DISLS: Lot size
+  DZEIT: In-house production
+  EISBE: Safety Stock
+  EISLO: Min safety stock
+  FHORI: SchedMargin key
+  GI_PR_TIME: GI Proc. Time
+  HERKL: Country of origin
+  HERKR: Region of origin
+  KAUSF: "Component scrap (%)"
+  KAUTB: Automatic PO
+  KORDB: Source list
+  KZAUS: "Discontinuation ind."
+  KZBED: Requirements group
+  KZECH: Batch entry
+  LADGR: Loading Group
+  LFRHY: Planning cycle
+  LGRAD: "Service level (%)"
+  LZEIH: Time unit
+  MAABC: ABC Indicator
+  MABST: Maximum stock level
+  MAXLZ: Max. Storage Period
+  MINBE: Reorder Point
+  MRPPP: Planning calendar
+  MTVER: Export/import group
+  NCOST: Do Not Cost
+  PERIV: Fiscal Year Variant
+  PLIFZ: Planned Deliv. Time
+  PRFRQ: Inspection interval
+  QSSYS: Target QM system
+  QZGTP: Certificate type
+  RDPRF: Rounding Profile
+  RGEKZ: Backflush
+  RUEZT: Setup time
+  RWPRO: Coverage profile
+  SBDKZ: "Individual/coll."
+  SERNP: Serial no. profile
+  SERVG: Service level
+  SHZET: "Safety time/act.cov."
+  TAKZT: Takt time
+  TRANZ: Interoperation
+  UEETK: Unltd Overdelivery
+  UEETO: Overdely tolerance
+  UNETO: Underdely tolerance
+  VBAMG: Base quantity.1
+  VBEAZ: Processing time.1
+  VRBFK: Multiplier
+  VRVEZ: Setup time.1
+  VSPVB: Default supply area
+  WEBAZ: GR processing time
+  WZEIT: Tot. repl. lead time
+  XCHPF: Batch management
 MBEW:
   MATNR: Material
   BWKEY: Valuation Area

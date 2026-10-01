@@ -38,6 +38,10 @@ export const api = {
   outputUrl: (id, name) => `/api/runs/${enc(id)}/outputs/${enc(name)}`,
 
   approvals: () => request('GET', '/approvals'),
+
+  databricksRulebook: () => request('GET', '/databricks/rulebook'),
+  startDatabricks: (body) => request('POST', '/databricks/start', body),
+  gold: (id, params) => request('GET', `/runs/${enc(id)}/gold?${qs(params)}`),
 }
 
 // Server-Sent Events for a run's progress. Returns a close() function.

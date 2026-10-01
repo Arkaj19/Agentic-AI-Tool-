@@ -30,7 +30,7 @@ export default function Runs() {
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs text-slate-600">
               <tr>
-                <th className="px-5 py-2.5">Started</th><th className="px-3 py-2.5">ECC file</th><th className="px-3 py-2.5">Rulebook</th>
+                <th className="px-5 py-2.5">Started</th><th className="px-3 py-2.5">Engine</th><th className="px-3 py-2.5">ECC file</th><th className="px-3 py-2.5">Rulebook</th>
                 <th className="px-3 py-2.5">Status</th><th className="px-3 py-2.5">Validation</th>
                 <th className="px-3 py-2.5 text-right">S/4 rows</th><th className="px-3 py-2.5">Duration</th><th className="px-5 py-2.5" />
               </tr>
@@ -39,6 +39,7 @@ export default function Runs() {
               {runs.map((r) => (
                 <tr key={r.id} className="border-t border-slate-100 hover:bg-navy-50/50">
                   <td className="whitespace-nowrap px-5 py-3">{dateTime(r.created)}<div className="text-xs text-slate-500">{r.startedBy}</div></td>
+                  <td className="px-3 py-3"><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${r.engine === 'databricks' ? 'bg-brand-100 text-brand-700' : 'bg-navy-50 text-navy-800'}`}>{r.engine === 'databricks' ? 'Databricks' : 'Embedded'}</span></td>
                   <td className="max-w-[220px] truncate px-3 py-3" title={r.file}>{r.file}</td>
                   <td className="max-w-[200px] truncate px-3 py-3" title={r.mappingDoc}>{r.mappingDoc}</td>
                   <td className="px-3 py-3"><Pill status={r.status} /></td>

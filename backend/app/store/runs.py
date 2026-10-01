@@ -24,6 +24,18 @@ STEPS = [
     {"id": "validate", "label": "Validate", "agent": "Validation"},
     {"id": "report", "label": "Report", "agent": "Reporting"},
 ]
+STEPS_DBX = [
+    {"id": "connect", "label": "Connect", "agent": "Databricks connection"},
+    {"id": "silver", "label": "Silver layer", "agent": "Silver layer"},
+    {"id": "rulebook", "label": "Rule book", "agent": "Rule book"},
+    {"id": "approve", "label": "Approve", "agent": "Approval", "gate": True},
+    {"id": "codegen", "label": "Generate code", "agent": "Code generation"},
+    {"id": "transform", "label": "Transform", "agent": "Transformation"},
+    {"id": "gold", "label": "Gold layer", "agent": "Gold layer"},
+    {"id": "validate", "label": "Validate", "agent": "Validation"},
+    {"id": "report", "label": "Report", "agent": "Reporting"},
+]
+ENGINES = {"embedded": STEPS, "databricks": STEPS_DBX}
 _DIR = settings.DATA_DIR / "runs"
 _locks: dict[str, threading.Lock] = {}
 _glock = threading.Lock()
@@ -47,15 +59,17 @@ def _path(rid: str) -> Path:
     return run_dir(rid) / "run.json"
 
 
-def create(*, file: str, mapping_id: str, mapping_doc: str, started_by: str = "user") -> dict:
+def create(*, file: str, mapping_id: str | None, mapping_doc: str, started_by: str = "user",
+           engine: str = "embedded") -> dict:
     rid = f"RUN-MARC-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}-{secrets.token_hex(2)}"
     run_dir(rid).mkdir(parents=True, exist_ok=True)
-    run = {"id": rid, "object": "MARC", "file": file, "mappingId": mapping_id, "mappingDoc": mapping_doc,
+    run = {"id": rid, "object": "MARC", "engine": engine, "file": file, "mappingId": mapping_id,
+           "mappingDoc": mapping_doc,
            "status": "queued", "metrics": {"eccRows": None, "loadRows": None, "unmappedRows": None},
            "created": now(), "started": None, "finished": None, "startedBy": started_by,
            "currentStep": None,
            "steps": {s["id"]: {"status": "queued", "started": None, "finished": None, "summary": "",
-                               "detail": {}} for s in STEPS},
+                               "detail": {}} for s in ENGINES[engine]},
            "gates": [], "validation": None, "outputs": [], "error": None}
     save(run)
     return run

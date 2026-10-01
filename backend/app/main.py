@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from app import labels
 from app.config import settings
 from app.connectors import source
+from app.databricks import client as dbx, rulebook as dbx_rulebook
 from app.graph import runner
 from app.llm import azure
 from app.rulebook import service as mappings
@@ -47,12 +48,13 @@ def status(force: bool = False):
     return {"sharepoint": source.status(force),
             "llm": {"configured": azure.available(),
                     "deployment": settings.AZURE_OPENAI_CHAT_DEPLOYMENT if azure.available() else None},
+            "databricks": dbx.status(force) if settings.databricks_configured else {"connected": False, "detail": "Not configured"},
             "mappingsFolder": settings.MAPPINGS_FOLDER, "validationPlant": settings.VALIDATION_PLANT}
 
 
 @app.get("/api/meta")
 def meta():
-    return {"steps": runs.STEPS}
+    return {"steps": runs.STEPS, "engines": runs.ENGINES}
 
 
 # -- SharePoint browsing and previews --------------------------------------------------------
@@ -137,11 +139,41 @@ def mapping_approve_and_run(mid: str, body: dict = Body(...)):
         _fail(exc, 404)
 
 
+# -- Databricks pipeline ---------------------------------------------------------------------------
+
+@app.get("/api/databricks/rulebook")
+def databricks_rulebook():
+    try:
+        return dbx_rulebook.overview()
+    except FileNotFoundError as exc:
+        _fail(exc)
+
+
+@app.post("/api/databricks/start")
+def databricks_start(body: dict = Body(...)):
+    if not body.get("file"):
+        raise HTTPException(400, "Select the ECC file in Data Extraction first")
+    if not settings.databricks_configured:
+        raise HTTPException(400, "Databricks is not configured (DATABRICKS_* in backend/.env)")
+    return {"runId": runner.start_databricks(body["file"], by=body.get("by", "user"))["id"]}
+
+
+@app.get("/api/runs/{rid}/gold")
+def run_gold(rid: str, offset: int = 0, limit: int = Query(50, le=500)):
+    p = runs.run_dir(rid) / "gold_preview.json"
+    if not p.exists():
+        raise HTTPException(404, "No gold data for this run yet")
+    data = json.loads(p.read_text(encoding="utf-8"))
+    total = (runs.get(rid).get("dbx") or {}).get("goldRows", len(data["rows"]))
+    return {"columns": data["columns"], "rows": data["rows"][offset:offset + limit], "total": int(total),
+            "previewRows": len(data["rows"])}
+
+
 # -- runs ----------------------------------------------------------------------------------------
 
 @app.get("/api/runs")
 def runs_list():
-    keep = ("id", "file", "mappingId", "mappingDoc", "status", "created", "started", "finished", "startedBy",
+    keep = ("id", "engine", "file", "mappingId", "mappingDoc", "status", "created", "started", "finished", "startedBy",
             "currentStep", "error", "metrics", "gates")
     out = []
     for r in runs.list_all():
@@ -202,9 +234,10 @@ def run_decide(rid: str, gate: str, body: dict = Body(...)):
 @app.get("/api/runs/{rid}/outputs/{name}")
 def run_output(rid: str, name: str):
     p = runs.run_dir(rid) / name
-    if not p.exists() or p.parent != runs.run_dir(rid) or p.suffix != ".xlsx":
+    types = {".xlsx": XLSX, ".py": "text/x-python", ".csv": "text/csv"}
+    if not p.exists() or p.parent != runs.run_dir(rid) or p.suffix not in types:
         raise HTTPException(404, "File not found")
-    return FileResponse(p, media_type=XLSX, filename=name)
+    return FileResponse(p, media_type=types[p.suffix], filename=name)
 
 
 # -- approvals -------------------------------------------------------------------------------------

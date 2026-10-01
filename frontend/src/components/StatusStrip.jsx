@@ -23,7 +23,9 @@ export default function StatusStrip({ run }) {
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Tile loading={loading} ok={status?.sharepoint?.connected} title="SharePoint" detail={status?.sharepoint?.detail || ''} />
       <Tile loading={loading} ok title="ECC file" detail={run?.file || '—'} />
-      <Tile loading={loading} ok title="Rulebook" detail={run?.mappingDoc || '—'} />
+      {run?.engine === 'databricks'
+        ? <Tile loading={loading} ok={status?.databricks?.connected} title="Databricks" detail={status?.databricks?.detail || ''} />
+        : <Tile loading={loading} ok title="Rulebook" detail={run?.mappingDoc || '—'} />}
       <Tile loading={loading} ok={status?.llm?.configured} title="AI model" detail={status?.llm?.deployment || 'Not configured'} />
     </div>
   )
